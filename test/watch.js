@@ -3,11 +3,7 @@ describe("watch", function() {
 
 
   var fw = window.fw;
-  beforeEach(function(){
 
-
-
-  });
 
 
 
@@ -20,7 +16,8 @@ describe("watch", function() {
     beforeEach(function(){
 
       object = {
-        propName : 'initial value'
+        propName : 'initial value',
+        nonWatchedProp : 'initial value'
       };
 
       callFlag = false;
@@ -33,11 +30,21 @@ describe("watch", function() {
 
 
 
-    it("should call the watch handler", function() {
-
+    it("should call the watch handler if setting a new value on a WATCHED property", function() {
       object.propName = 'new value';
       expect(callFlag).toBe(true);
+    });
 
+
+    it("should NOT call the watch handler if setting a new value on a NON WATCHED property", function() {
+      object.nonWatchedProp = 'new value';
+      expect(callFlag).toBe(false);
+    });
+
+    it("should NOT call the watch handler if setting a new value on an UNWATCHED property", function() {
+      fw.unwatch(object, 'propName');
+      object.propName = 'new value';
+      expect(callFlag).toBe(false);
     });
 
 

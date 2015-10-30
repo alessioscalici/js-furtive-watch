@@ -1,5 +1,5 @@
 
-(function(root){
+(function(root, moduleName){
   'use strict';
 
   if (!root) {
@@ -7,10 +7,11 @@
   }
 
 
-  var fw = root.fw || {}, // the static functions container
+  var fw = root[moduleName] || {}, // the static functions container
     WP_BACKUP = '$$propBackup', // the name of the property used to store the watched properties data
     WP_HANDLERS = '$$propWatch';  // the name of the property used to store the watch handlers
 
+  root[moduleName] = fw;
 
 
   var watchProp = function watchProp(obj, prop, func) {
@@ -188,5 +189,5 @@
 
 
 
-})(window);
+})(window, 'fw');
 

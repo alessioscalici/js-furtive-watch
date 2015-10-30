@@ -1,18 +1,48 @@
-describe("test test", function() {
+describe("watch", function() {
 
 
+
+  var fw = window.fw;
+  beforeEach(function(){
+
+
+
+  });
+
+
+
+
+  describe("when watching a simple property", function() {
+
+
+    var object, callFlag;
 
     beforeEach(function(){
 
+      object = {
+        propName : 'initial value'
+      };
 
+      callFlag = false;
+
+      fw.watch(object, 'propName', function () {
+        callFlag = true;
+      });
 
     });
 
 
 
-    it("should do nothing", function() {
-        expect(true).toBe(true);
+    it("should call the watch handler", function() {
+
+      object.propName = 'new value';
+      expect(callFlag).toBe(true);
+
     });
+
+
+
+  });
 
 
 

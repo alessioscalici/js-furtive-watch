@@ -50,20 +50,20 @@ describe("watch", function() {
     });
 
 
-    it("should NOT call the watch handlers if setting a new value on a NON WATCHED property", function() {
+    it("should NOT call handlers on a NON WATCHED property", function() {
       object.nonWatchedProp = 'new value';
       expect(callResults.handler1).toBeUndefined();
       expect(callResults.handler2).toBeUndefined();
     });
 
-    it("should NOT call the watch handlers if setting a new value on an UNWATCHED property", function() {
+    it("should NOT call handlers on an UNWATCHED property", function() {
       fw.unwatch(object, 'propName');
       object.propName = 'new value';
       expect(callResults.handler1).toBeUndefined();
       expect(callResults.handler2).toBeUndefined();
     });
 
-    it("should NOT call an unwatched handler", function() {
+    it("should NOT call an UNWATCHED handler", function() {
       fw.unwatch(object, 'propName', handler2);
       object.propName = 'new value';
       expect(callResults.handler1).toBeDefined();

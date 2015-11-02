@@ -77,77 +77,265 @@ describe("watch", function() {
 
 
 
+  // ============================================ WATCHING METHODS ============================================ //
+
+
+  describe(".watchMethod() on array", function() {
+
+
+    var array, callResults, handler1, handler2, handler3;
+
+    handler1 = function () {
+      callResults.handler1 = {
+        args: arguments
+      };
+    };
+
+    handler2 = function () {
+      callResults.handler2 = {
+        args: arguments
+      };
+    };
+
+    handler3 = function () {
+      callResults.handler3 = {
+        args: arguments
+      };
+    };
+
+
+
+    beforeEach(function(){
+      array = [];
+      callResults = {};
+    });
+
+
+
+    it("should call the watch handlers if calling the method", function() {
+
+      fw.watchMethod(array, 'push', handler1);
+      fw.watchMethod(array, 'push', handler2);
+
+      array.push(1);
+
+      expect(callResults.handler1).toBeDefined();
+      expect(callResults.handler2).toBeDefined();
+
+      expect(callResults.handler1.args[0].args[0]).toBe(1);
+      expect(callResults.handler1.args[0].method).toBe('push');
+      expect(callResults.handler1.args[0].object).toBe(array);
+
+      expect(callResults.handler2.args[0].args[0]).toBe(1);
+      expect(callResults.handler2.args[0].method).toBe('push');
+      expect(callResults.handler2.args[0].object).toBe(array);
+    });
+
+
+    it("can be set on different methods", function() {
+
+      fw.watchMethod(array, 'push', handler1);
+      fw.watchMethod(array, 'slice', handler2);
+
+      array.push(1);
+      array.slice(0, 1);
+
+      expect(callResults.handler1).toBeDefined();
+      expect(callResults.handler2).toBeDefined();
+
+      expect(callResults.handler1.args[0].args[0]).toBe(1);
+      expect(callResults.handler1.args[0].method).toBe('push');
+      expect(callResults.handler1.args[0].object).toBe(array);
+
+      expect(callResults.handler2.args[0].args[0]).toBe(0);
+      expect(callResults.handler2.args[0].args[1]).toBe(1);
+      expect(callResults.handler2.args[0].method).toBe('slice');
+      expect(callResults.handler2.args[0].object).toBe(array);
+    });
+
+
+
+
+    describe('.unwatchMethod()', function () {
+
+      beforeEach(function(){
+        fw.watchMethod(array, 'push', handler1);
+        fw.watchMethod(array, 'slice', handler2);
+        fw.watchMethod(array, 'slice', handler3);
+      });
+
+
+      describe('when called with no method specified', function () {
+
+
+        it ('should unwatch all methods', function () {
+
+          fw.unwatchMethod(array);
+
+          array.push(1);
+          array.slice(0, 1);
+
+          expect(callResults.handler1).toBeUndefined();
+          expect(callResults.handler2).toBeUndefined();
+          expect(callResults.handler3).toBeUndefined();
+        });
+      });
+
+
+
+      describe('when called specifying a method', function () {
+
+
+        it ('should unwatch just that method', function () {
+
+          fw.unwatchMethod(array, 'push');
+
+          array.push(1);
+          array.slice(0, 1);
+
+          expect(callResults.handler1).toBeUndefined();
+          expect(callResults.handler2).toBeDefined();
+          expect(callResults.handler3).toBeDefined();
+        });
+      });
+
+
+      describe('when called specifying a method and a function', function () {
+
+
+        it ('should unwatch just that function', function () {
+
+          fw.unwatchMethod(array, 'slice', handler3);
+
+          array.push(1);
+          array.slice(0, 1);
+
+          expect(callResults.handler1).toBeDefined();
+          expect(callResults.handler2).toBeDefined();
+          expect(callResults.handler3).toBeUndefined();
+        });
+      });
+
+    });
+
+
+  });
+
+
+
+
+  // ============================================ WATCHING ARRAY ELEMENTS PROPERTIES ============================================ //
+
+
+  describe("when watching an array element property", function() {
+
+
+    var array, callResults, handler1, handler2;
+
+    handler1 = function () {
+      callResults.handler1 = {
+        args: arguments
+      };
+    };
+
+    handler2 = function () {
+      callResults.handler2 = {
+        args: arguments
+      };
+    };
+
+
+
+    beforeEach(function(){
+
+      array = [
+        { name: 'element A', propName: 'element A initial value' },
+        { name: 'element B', propName: 'element B initial value' }
+      ];
+
+      callResults = {};
+
+      fw.watchArray(array, 'propName', handler1);
+      fw.watchArray(array, 'propName', handler2);
+
+    });
+
+
+
+    it("should call the watch handlers if setting a new value on a WATCHED element property", function() {
+      array[0].propName = 'new value';
+      expect(callResults.handler1).toBeDefined();
+      expect(callResults.handler2).toBeDefined();
+    });
+
+
+
+    it("should call the watch handlers if setting a new value on a NEW ELEMENT property added with push()", function() {
+
+      var newElement = { name: 'new element push', propName: 'new element push initial value' };
+      array.push(newElement);
+      newElement.propName = 'new value';
+      expect(callResults.handler1).toBeDefined();
+      expect(callResults.handler2).toBeDefined();
+    });
+
+
+
+    it("should call the watch handlers if setting a new value on a NEW ELEMENT property added with unshift()", function() {
+
+      var newElement = { name: 'new element unshift', propName: 'new element unshift initial value' };
+      array.unshift(newElement);
+      newElement.propName = 'new value';
+      expect(callResults.handler1).toBeDefined();
+      expect(callResults.handler2).toBeDefined();
+    });
+
+
+
+
+    describe('after calling .unwatchArray()', function () {
+
+
+      it("should NOT call the watch handlers on existing elements", function() {
+        fw.unwatchArray(array);
+        array[0].propName = 'new value';
+        expect(callResults.handler1).toBeUndefined();
+        expect(callResults.handler2).toBeUndefined();
+      });
+
+
+      it("should NOT call the unwatched handlers but SHOULD call the ones still watched", function() {
+        fw.unwatchArray(array, 'propName', handler2);
+        array[0].propName = 'new value';
+        expect(callResults.handler1).toBeDefined();
+        expect(callResults.handler2).toBeUndefined();
+      });
+
+
+
+      it("should NOT call the watch handlers on new elements", function() {
+        fw.unwatchArray(array);
+
+        var newElement = { name: 'new element unshift', propName: 'new element unshift initial value' };
+
+        array.unshift(newElement);
+        newElement.propName = 'new value';
+
+
+        expect(callResults.handler1).toBeUndefined();
+        expect(callResults.handler2).toBeUndefined();
+      });
+
+
+    });
+
+
+
+
+
+
+  });
+
 
 
 });
-
-/*
-
-
-
-var tests = {
-  'watched property handler fired' : 'failed',
-  'watched undefined property handler fired' : 'failed',
-  'unwatched property handler not fired' : 'success'
-};
-
-function Person (name, age) {
-  this.name = name;
-  this.age = age;
-}
-
-var o = new Person('Mario', 32);
-
-
-o.age = 20;
-o.name = 'No fire';
-
-
-
-fw.watch(o, 'age', function (obj, prop, from, to) { tests['watched property handler fired'] = 'success'; });
-fw.watch(o, 'lillo', function (obj, prop, from, to) { tests['watched undefined property handler fired'] = 'success'; });
-
-
-var handler = function (obj, prop, from, to) { tests['unwatched property handler not fired'] = 'failed'; };
-fw.watch(o, 'name', handler);
-fw.unwatch(o, 'name', handler);
-
-o.age = 6;
-o.name = 'No fire';
-o.lillo = 'Fire';
-
-
-fw.unwatch(o);
-
-
-o.age = 100;
-o.name = 'No fire 2';
-
-
-
-
-console.log('TESTS', tests);
-
-
-
-// watch method (watch different funcs)
-
-var array = ['pippo', 'pluto', 'paperino'];
-
-function pippo (mod) {
-   console.log('PIPPO', mod);
-}
-fw.watchMethod(array, 'unshift', function (mod) { console.log('FIRED unshift', mod); });
-fw.watchMethod(array, 'unshift', function (mod) { console.log('FIRED unshift 2', mod); });
-fw.watchMethod(array, 'unshift', pippo);
-fw.watchMethod(array, 'push', function (mod) { console.log('FIRED push', mod); });
-
-fw.unwatchMethod(array);
-
-console.log(Object.keys(array), array);
-
-
-array.unshift('qui', 'quo', 'qua');
-array.push('qui', 'quo', 'qua');
-
- */

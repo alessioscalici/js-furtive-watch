@@ -135,7 +135,7 @@
       obj[method] = function () {
         var mod = {
           method: method,
-          array: this,
+          object: this,
           args: arguments
         };
         for (var i = 0, ii = obj[WM_HANDLERS][method].length; i < ii; ++i) {
@@ -153,9 +153,13 @@
 
   fw.unwatchMethod = function (obj, method, func) {
 
-    /*if (!obj || !(obj[WM_HANDLERS]) || ( method && !(obj[WM_HANDLERS][method]))) {
+    if (!obj) {
+      throw 'first argument invalid';
+    }
+
+    if (!(obj[WM_HANDLERS]) || ( method && !(obj[WM_HANDLERS][method]))) {
       return;
-    }*/
+    }
 
     if (!method) {
       for (var m in obj[WM_HANDLERS]) {
@@ -185,6 +189,68 @@
       delete obj[WM_BACKUP];
     }
 
+  };
+
+
+
+
+
+  var WA_HANDLERS = '$$elemHandlers',
+    WA_METHOD_HANDLER = '$$arrayMethodHandler',
+    newElementsHandler = function (prop, func) {
+      return function (mod) {
+        for (var i = 0, ii = mod.args.length; i < ii; ++i) {
+          if (mod.args[i]) {
+            fw.watch(mod.args[i], prop, func);
+          }
+        }
+      };
+    };
+
+
+
+  fw.watchArray = function (obj, prop, func) {
+
+    if (!(obj && obj.constructor === Array)) {
+      throw 'watchArray: obj must be an Array';
+    }
+
+    // prepare the array to watch element properties
+    if (!obj[WA_HANDLERS]) {
+      Object.defineProperty(obj, WA_HANDLERS, { configurable: true, enumerable: false, writable: true, value: {} });
+      Object.defineProperty(obj, WA_METHOD_HANDLER, { configurable: true, enumerable: false, writable: true, value: {} });
+    }
+
+    obj[WA_HANDLERS][prop] = func; // FIXME this should be an array of functions
+    obj[WA_METHOD_HANDLER][prop] = newElementsHandler(prop, func);
+
+    for (var i = 0, ii = obj.length; i < ii; ++i ) {
+      fw.watch(obj[i], prop, func);
+    }
+
+
+
+    fw.watchMethod(obj, 'push', obj[WA_METHOD_HANDLER][prop]);
+    fw.watchMethod(obj, 'unshift', obj[WA_METHOD_HANDLER][prop]);
+
+  };
+
+
+
+  fw.unwatchArray = function (obj, prop, func) {
+    if (!obj || !obj[WA_HANDLERS]) {
+      return;
+    }
+
+    for (var i = 0, ii = obj.length; i < ii; ++i ) {
+      fw.unwatch(obj[i], prop, func);
+      fw.unwatchMethod(obj, 'push', obj[WA_METHOD_HANDLER][prop]);
+      fw.unwatchMethod(obj, 'unshift', obj[WA_METHOD_HANDLER][prop]);
+    }
+
+
+    delete obj[WA_HANDLERS];
+    delete obj[WA_METHOD_HANDLER];
   };
 
 

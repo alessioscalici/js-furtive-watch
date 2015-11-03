@@ -263,24 +263,47 @@
       return;
     }
 
+    var unwatchElems = function (arr, prop, func) {
+        // for each element of the array, unwatch the specified handler
+        for (var i = 0, ii = arr.length; i < ii; ++i ) {
+          fw.unwatch(arr[i], prop, func);
+        }
+      },
+      unwatchProp = function (arr, prop) {
+        // for each ARRAY handler for this property, unwatch all elements
+        for (var j = 0, aux = obj[WA_HANDLERS][prop], jj = aux.length; j < jj; ++j ) {
+          unwatchElems(arr, prop, aux[j]);
+        }
+      };
+
     if (!prop) {
       // unwatch all properties
-      //
-      // FIXME TO IMPLEMENT
-      console.error('TO IMPLEMENT');
+
+      // for each ARRAY watched property
+      for (var k in obj[WA_HANDLERS]) {
+        if (obj[WA_HANDLERS].hasOwnProperty(k)) {
+          unwatchProp(obj, prop);
+        }
+      }
+
+      obj[WA_HANDLERS] = {}; // remove all array handlers
+
     } else if (!func) {
       // unwatch only this property
-      //
-      // FIXME TO IMPLEMENT
-      console.error('TO IMPLEMENT');
+      delete obj[WA_HANDLERS][prop]; // remove all array handlers for this property
+      unwatchProp(obj, prop);
     } else {
       // unwatch only this handler
-      obj[WA_HANDLERS][prop].splice(obj[WA_HANDLERS][prop].indexOf(func, 1));
-      // for each array element
-      for (var i = 0, ii = obj.length; i < ii; ++i ) {
-        fw.unwatch(obj[i], prop, func);
+      obj[WA_HANDLERS][prop].splice(obj[WA_HANDLERS][prop].indexOf(func, 1)); // remove the single array handler
+      unwatchElems(obj, prop, func);
+
+      // delete array handlers array for this property if it's empty
+      if (obj[WA_HANDLERS][prop].length === 0) {
+        delete obj[WA_HANDLERS][prop];
       }
     }
+
+
 
     // clean the array if there are no more handlers
     if (Object.keys(obj[WA_HANDLERS]).length === 0) {

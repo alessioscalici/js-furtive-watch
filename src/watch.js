@@ -38,7 +38,13 @@
         },
         set : function (v) {
           for (var i = 0, ii = obj[WP_HANDLERS][prop].length; i < ii; ++i) {
-            obj[WP_HANDLERS][prop][i](obj, prop, obj[WP_BACKUP][prop], v);
+            var mod = {
+              object: obj,
+              property: prop,
+              from: obj[WP_BACKUP][prop],
+              to: v
+            };
+            obj[WP_HANDLERS][prop][i](mod);
           }
           obj[WP_BACKUP][prop] = v;
         }
@@ -136,7 +142,7 @@
         var mod = {
           method: method,
           object: this,
-          args: arguments
+          args: arguments //Array.prototype.slice.call(arguments)
         };
         for (var i = 0, ii = obj[WM_HANDLERS][method].length; i < ii; ++i) {
           obj[WM_HANDLERS][method][i](mod);
@@ -197,11 +203,22 @@
 
   var WA_HANDLERS = '$$elemHandlers',
     WA_METHOD_HANDLER = '$$arrayMethodHandler',
-    newElementsHandler = function (prop, func) {
+    newElementsHandler = function (self) {
       return function (mod) {
+
+        // for each unshift() / push() argument
         for (var i = 0, ii = mod.args.length; i < ii; ++i) {
           if (mod.args[i]) {
-            fw.watch(mod.args[i], prop, func);
+            // for each watched property
+            for (var prop in self[WA_HANDLERS]) {
+             // console.log('hhhh', prop, mod.args, self[WA_HANDLERS][prop]);
+              if (self[WA_HANDLERS].hasOwnProperty(prop)) {
+                // for each handler
+                for (var j = 0, jj = self[WA_HANDLERS][prop].length; j < jj; ++j) {
+                  fw.watch(mod.args[i], prop, self[WA_HANDLERS][prop][j]);
+                }
+              }
+            }
           }
         }
       };
@@ -218,20 +235,24 @@
     // prepare the array to watch element properties
     if (!obj[WA_HANDLERS]) {
       Object.defineProperty(obj, WA_HANDLERS, { configurable: true, enumerable: false, writable: true, value: {} });
-      Object.defineProperty(obj, WA_METHOD_HANDLER, { configurable: true, enumerable: false, writable: true, value: {} });
+      Object.defineProperty(obj, WA_METHOD_HANDLER, { configurable: true, enumerable: false, writable: true, value: newElementsHandler(obj) });
+      fw.watchMethod(obj, 'push', obj[WA_METHOD_HANDLER]);
+      fw.watchMethod(obj, 'unshift', obj[WA_METHOD_HANDLER]);
     }
 
-    obj[WA_HANDLERS][prop] = func; // FIXME this should be an array of functions
-    obj[WA_METHOD_HANDLER][prop] = newElementsHandler(prop, func);
+    // prepare the array to watch this property
+    if (!obj[WA_HANDLERS][prop]) {
+      obj[WA_HANDLERS][prop] = [];
+    }
+
+
+    obj[WA_HANDLERS][prop].push(func);
+
 
     for (var i = 0, ii = obj.length; i < ii; ++i ) {
       fw.watch(obj[i], prop, func);
     }
 
-
-
-    fw.watchMethod(obj, 'push', obj[WA_METHOD_HANDLER][prop]);
-    fw.watchMethod(obj, 'unshift', obj[WA_METHOD_HANDLER][prop]);
 
   };
 
@@ -242,15 +263,33 @@
       return;
     }
 
-    for (var i = 0, ii = obj.length; i < ii; ++i ) {
-      fw.unwatch(obj[i], prop, func);
-      fw.unwatchMethod(obj, 'push', obj[WA_METHOD_HANDLER][prop]);
-      fw.unwatchMethod(obj, 'unshift', obj[WA_METHOD_HANDLER][prop]);
+    if (!prop) {
+      // unwatch all properties
+      //
+      // FIXME TO IMPLEMENT
+      console.error('TO IMPLEMENT');
+    } else if (!func) {
+      // unwatch only this property
+      //
+      // FIXME TO IMPLEMENT
+      console.error('TO IMPLEMENT');
+    } else {
+      // unwatch only this handler
+      obj[WA_HANDLERS][prop].splice(obj[WA_HANDLERS][prop].indexOf(func, 1));
+      // for each array element
+      for (var i = 0, ii = obj.length; i < ii; ++i ) {
+        fw.unwatch(obj[i], prop, func);
+      }
     }
 
+    // clean the array if there are no more handlers
+    if (Object.keys(obj[WA_HANDLERS]).length === 0) {
+      fw.unwatchMethod(obj, 'push', obj[WA_METHOD_HANDLER]);
+      fw.unwatchMethod(obj, 'unshift', obj[WA_METHOD_HANDLER]);
+      delete obj[WA_HANDLERS];
+      delete obj[WA_METHOD_HANDLER];
+    }
 
-    delete obj[WA_HANDLERS];
-    delete obj[WA_METHOD_HANDLER];
   };
 
 

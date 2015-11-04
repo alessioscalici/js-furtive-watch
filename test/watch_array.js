@@ -1,10 +1,10 @@
-describe("watch - array elements", function() {
+describe("[watch - array]", function() {
 
 
 
   var fw = window.fw;
 
-  var array, callStack, handlers, newElement;
+  var array, callStack, handlers, newElement, element;
 
   var handlerGen = function (handlerId) {
     var handler = function (mod) {
@@ -30,147 +30,256 @@ describe("watch - array elements", function() {
 
 
 
-  describe("when watching an array element property", function() {
+  // =========================================== CALLING HANDLERS =========================================== //
+
+  describe("[calling handlers]", function() {
 
 
+    var testCallingHandlers = function () {
 
-    it("should call the watch handlers if setting a new value on a WATCHED element property", function() {
+      it("should call the handlers if changing a watched property", function() {
 
-      fw.watchArray(array, 'name', handlerGen('nameHandler'));
-
-      array[0].name = 'Bower';
-
-      expect(callStack.length).toBe(1);
-      expect(callStack[0].handlerId).toBe('nameHandler');
-      expect(callStack[0].mod.property).toBe('name');
-      expect(callStack[0].mod.from).toBe('Mario');
-      expect(callStack[0].mod.to).toBe('Bower');
-      expect(callStack[0].mod.object).toBe(array[0]);
-
-    });
-
-
-
-    describe("when a NEW ELEMENT is added with push()", function() {
-
-      var newElement;
-
-      beforeEach(function() {
-        callStack = [];
-
-        array = [
-          { name: 'Mario', job: 'plumber' },
-          { name: 'Luigi', job: 'plumber' }
-        ];
-
-        newElement = { name: 'Bower', job: 'monster' };
-        fw.watchArray(array, 'job', handlerGen('jobHandler'));
-        array.push(newElement);
-
-      });
-
-
-      it("should call the watch handlers if setting a new value on a watched NEW ELEMENT property", function() {
-
-        newElement.job = 'level boss';
+        var prevVal = element.job;
+        element.job = 'level boss';
 
         expect(callStack.length).toBe(1);
         expect(callStack[0].handlerId).toBe('jobHandler');
         expect(callStack[0].mod.property).toBe('job');
-        expect(callStack[0].mod.from).toBe('monster');
+        expect(callStack[0].mod.from).toBe(prevVal);
         expect(callStack[0].mod.to).toBe('level boss');
-        expect(callStack[0].mod.object).toBe(newElement);
+        expect(callStack[0].mod.object).toBe(element);
       });
 
 
-      it("should call ALL the watch handlers if setting a new value on a watched NEW ELEMENT property", function() {
+      it("should call ALL the handlers if changing a watched property", function() {
 
         fw.watchArray(array, 'job', handlerGen('jobHandler2'));
 
-        newElement.job = 'level boss';
+        var prevVal = element.job;
+        element.job = 'level boss';
 
         expect(callStack.length).toBe(2);
         expect(callStack[0].handlerId).toBe('jobHandler');
         expect(callStack[0].mod.property).toBe('job');
-        expect(callStack[0].mod.from).toBe('monster');
+        expect(callStack[0].mod.from).toBe(prevVal);
         expect(callStack[0].mod.to).toBe('level boss');
-        expect(callStack[0].mod.object).toBe(newElement);
+        expect(callStack[0].mod.object).toBe(element);
         expect(callStack[1].handlerId).toBe('jobHandler2');
         expect(callStack[1].mod.property).toBe('job');
-        expect(callStack[1].mod.from).toBe('monster');
+        expect(callStack[1].mod.from).toBe(prevVal);
         expect(callStack[1].mod.to).toBe('level boss');
-        expect(callStack[1].mod.object).toBe(newElement);
+        expect(callStack[1].mod.object).toBe(element);
       });
 
-      it("should NOT call the watch handlers if setting a new value on a NON watched NEW ELEMENT property", function() {
-        newElement.name = 'Super Bower';
+      it("should NOT call the handlers if changing a NON WATCHED property", function() {
+        element.name = 'Super Bower';
         expect(callStack.length).toBe(0);
       });
 
+    };
+
+
+    beforeEach(function() {
+      callStack = [];
+      array = [
+        { name: 'Mario', job: 'plumber' },
+        { name: 'Luigi', job: 'plumber' }
+      ];
     });
 
 
-
-
-    describe("when a NEW ELEMENT is added with unshift()", function() {
-
-      var newElement;
+    describe("on an existing element", function() {
 
       beforeEach(function() {
-        callStack = [];
 
-        array = [
-          { name: 'Mario', job: 'plumber' },
-          { name: 'Luigi', job: 'plumber' }
-        ];
-
-        newElement = { name: 'Bower', job: 'monster' };
+        element = array[0];
         fw.watchArray(array, 'job', handlerGen('jobHandler'));
-        array.unshift(newElement);
 
       });
 
+      testCallingHandlers();
 
-      it("should call the watch handlers if setting a new value on a watched NEW ELEMENT property", function() {
+    });
 
-        newElement.job = 'level boss';
+    describe("on a new element added with push()", function() {
+
+      beforeEach(function() {
+
+        element = { name: 'Bower', job: 'monster' };
+        fw.watchArray(array, 'job', handlerGen('jobHandler'));
+        array.push(element);
+
+      });
+
+      testCallingHandlers();
+
+    });
+
+    describe("on a new element added with unshift()", function() {
+
+      beforeEach(function() {
+
+        element = { name: 'Bower', job: 'monster' };
+        fw.watchArray(array, 'job', handlerGen('jobHandler'));
+        array.unshift(element);
+
+      });
+
+      testCallingHandlers();
+
+    });
+
+
+  }); // end calling handlers
+
+
+
+  // =========================================== UNWATCH SPECIFIC ARRAY HANDLER =========================================== //
+  describe("[unwatch handler]", function() {
+
+
+    var testUnwatchHandler = function () {
+
+
+      it("should deactivate only the specified handler", function() {
+
+        var prevVal = element.job;
+        element.job = 'monster';
 
         expect(callStack.length).toBe(1);
-        expect(callStack[0].handlerId).toBe('jobHandler');
+        expect(callStack[0].handlerId).toBe('jobHandler2');
         expect(callStack[0].mod.property).toBe('job');
-        expect(callStack[0].mod.from).toBe('monster');
-        expect(callStack[0].mod.to).toBe('level boss');
-        expect(callStack[0].mod.object).toBe(newElement);
+        expect(callStack[0].mod.from).toBe(prevVal);
+        expect(callStack[0].mod.to).toBe('monster');
+        expect(callStack[0].mod.object).toBe(element);
+
       });
 
+    };
 
-      it("should call ALL the watch handlers if setting a new value on a watched NEW ELEMENT property", function() {
 
-        fw.watchArray(array, 'job', handlerGen('jobHandler2'));
+    beforeEach(function() {
+      callStack = [];
+      array = [
+        { name: 'Mario', job: 'plumber' },
+        { name: 'Luigi', job: 'plumber' }
+      ];
 
-        newElement.job = 'level boss';
+      fw.watchArray(array, 'job', handlerGen('jobHandler'));
+      fw.watchArray(array, 'job', handlerGen('jobHandler2'));
+
+    });
+
+
+    describe("on an existing element", function() {
+      beforeEach(function() {
+        element = array[0];
+        fw.unwatchArray(array, 'job', handlers.jobHandler);
+      });
+      testUnwatchHandler();
+    });
+
+    describe("on a new element added with push() BEFORE unwatching", function() {
+      beforeEach(function() {
+        element = { name: 'Bower', job: 'monster' };
+        array.push(element);
+        fw.unwatchArray(array, 'job', handlers.jobHandler);
+      });
+      testUnwatchHandler();
+    });
+
+    describe("on a new element added with push() AFTER unwatching", function() {
+      beforeEach(function() {
+        element = { name: 'Bower', job: 'monster' };
+        fw.unwatchArray(array, 'job', handlers.jobHandler);
+        array.push(element);
+      });
+      testUnwatchHandler();
+    });
+
+    describe("on a new element added with unshift() BEFORE unwatching", function() {
+      beforeEach(function() {
+        element = { name: 'Bower', job: 'monster' };
+        array.unshift(element);
+        fw.unwatchArray(array, 'job', handlers.jobHandler);
+      });
+      testUnwatchHandler();
+    });
+
+    describe("on a new element added with unshift() AFTER unwatching", function() {
+      beforeEach(function() {
+        element = { name: 'Bower', job: 'monster' };
+        fw.unwatchArray(array, 'job', handlers.jobHandler);
+        array.unshift(element);
+      });
+      testUnwatchHandler();
+    });
+
+
+
+
+    describe("should not deactivate any handler", function() {
+
+      beforeEach(function() {
+        element = array[0];
+      });
+
+      it("if the provided handler is not an handler", function() {
+
+
+        fw.unwatchArray(array, 'job', function(){});
+
+        var prevVal = element.job;
+        element.job = 'monster';
 
         expect(callStack.length).toBe(2);
         expect(callStack[0].handlerId).toBe('jobHandler');
         expect(callStack[0].mod.property).toBe('job');
-        expect(callStack[0].mod.from).toBe('monster');
-        expect(callStack[0].mod.to).toBe('level boss');
-        expect(callStack[0].mod.object).toBe(newElement);
+        expect(callStack[0].mod.from).toBe(prevVal);
+        expect(callStack[0].mod.to).toBe('monster');
+        expect(callStack[0].mod.object).toBe(element);
         expect(callStack[1].handlerId).toBe('jobHandler2');
         expect(callStack[1].mod.property).toBe('job');
-        expect(callStack[1].mod.from).toBe('monster');
-        expect(callStack[1].mod.to).toBe('level boss');
-        expect(callStack[1].mod.object).toBe(newElement);
+        expect(callStack[1].mod.from).toBe(prevVal);
+        expect(callStack[1].mod.to).toBe('monster');
+        expect(callStack[1].mod.object).toBe(element);
+
       });
 
-      it("should NOT call the watch handlers if setting a new value on a NON watched NEW ELEMENT property", function() {
-        newElement.name = 'Super Bower';
-        expect(callStack.length).toBe(0);
-      });
+      it("if the provided handler is an element handler but not an array handler", function() {
 
+
+        fw.watch(element, 'job', handlerGen('elementHandler'));
+        fw.unwatchArray(array, 'job', handlers.elementHandler);
+
+        var prevVal = element.job;
+        element.job = 'monster';
+
+        expect(callStack.length).toBe(3);
+        expect(callStack[0].handlerId).toBe('jobHandler');
+        expect(callStack[0].mod.property).toBe('job');
+        expect(callStack[0].mod.from).toBe(prevVal);
+        expect(callStack[0].mod.to).toBe('monster');
+        expect(callStack[0].mod.object).toBe(element);
+        expect(callStack[1].handlerId).toBe('jobHandler2');
+        expect(callStack[1].mod.property).toBe('job');
+        expect(callStack[1].mod.from).toBe(prevVal);
+        expect(callStack[1].mod.to).toBe('monster');
+        expect(callStack[1].mod.object).toBe(element);
+        expect(callStack[2].handlerId).toBe('elementHandler');
+        expect(callStack[2].mod.property).toBe('job');
+        expect(callStack[2].mod.from).toBe(prevVal);
+        expect(callStack[2].mod.to).toBe('monster');
+        expect(callStack[2].mod.object).toBe(element);
+
+      });
     });
 
-  });
+
+
+
+  }); // end unwatch handler
+
 
 
 
@@ -237,185 +346,6 @@ describe("watch - array elements", function() {
 
     });
 
-
-
-
-    describe("HANDLER: .unwatchArray(array, 'propertyName', handler)", function() {
-
-
-      describe("should deactivate only the specified handler", function() {
-
-        it("on an existing element", function() {
-
-
-          fw.watchArray(array, 'job', handlerGen('jobHandler'));
-          fw.watchArray(array, 'job', handlerGen('jobHandler2'));
-
-          fw.unwatchArray(array, 'job', handlers.jobHandler);
-
-          array[0].job = 'monster';
-
-          expect(callStack.length).toBe(1);
-          expect(callStack[0].handlerId).toBe('jobHandler2');
-          expect(callStack[0].mod.property).toBe('job');
-          expect(callStack[0].mod.from).toBe('plumber');
-          expect(callStack[0].mod.to).toBe('monster');
-          expect(callStack[0].mod.object).toBe(array[0]);
-
-        });
-
-        it("on new element pushed before unwatching", function() {
-
-          newElement = { name: 'Bower', job: 'monster' };
-
-          fw.watchArray(array, 'job', handlerGen('jobHandler'));
-          fw.watchArray(array, 'job', handlerGen('jobHandler2'));
-
-
-          array.push(newElement);
-
-          fw.unwatchArray(array, 'job', handlers.jobHandler);
-
-          newElement.job = 'level boss';
-
-          expect(callStack.length).toBe(1);
-          expect(callStack[0].handlerId).toBe('jobHandler2');
-          expect(callStack[0].mod.property).toBe('job');
-          expect(callStack[0].mod.from).toBe('monster');
-          expect(callStack[0].mod.to).toBe('level boss');
-          expect(callStack[0].mod.object).toBe(newElement);
-
-        });
-
-        it("on new element pushed after unwatching", function() {
-
-          newElement = { name: 'Bower', job: 'monster' };
-
-          fw.watchArray(array, 'job', handlerGen('jobHandler'));
-          fw.watchArray(array, 'job', handlerGen('jobHandler2'));
-
-          fw.unwatchArray(array, 'job', handlers.jobHandler);
-
-          array.push(newElement);
-
-
-          newElement.job = 'level boss';
-
-          expect(callStack.length).toBe(1);
-          expect(callStack[0].handlerId).toBe('jobHandler2');
-          expect(callStack[0].mod.property).toBe('job');
-          expect(callStack[0].mod.from).toBe('monster');
-          expect(callStack[0].mod.to).toBe('level boss');
-          expect(callStack[0].mod.object).toBe(newElement);
-
-        });
-
-
-        it("on new element unshifted before unwatching", function() {
-
-          newElement = { name: 'Bower', job: 'monster' };
-
-          fw.watchArray(array, 'job', handlerGen('jobHandler'));
-          fw.watchArray(array, 'job', handlerGen('jobHandler2'));
-
-
-          array.unshift(newElement);
-
-          fw.unwatchArray(array, 'job', handlers.jobHandler);
-
-          newElement.job = 'level boss';
-
-          expect(callStack.length).toBe(1);
-          expect(callStack[0].handlerId).toBe('jobHandler2');
-          expect(callStack[0].mod.property).toBe('job');
-          expect(callStack[0].mod.from).toBe('monster');
-          expect(callStack[0].mod.to).toBe('level boss');
-          expect(callStack[0].mod.object).toBe(newElement);
-
-        });
-
-        it("on new element unshifted after unwatching", function() {
-
-          newElement = { name: 'Bower', job: 'monster' };
-
-          fw.watchArray(array, 'job', handlerGen('jobHandler'));
-          fw.watchArray(array, 'job', handlerGen('jobHandler2'));
-
-
-          fw.unwatchArray(array, 'job', handlers.jobHandler);
-
-          array.unshift(newElement);
-
-
-          newElement.job = 'level boss';
-
-          expect(callStack.length).toBe(1);
-          expect(callStack[0].handlerId).toBe('jobHandler2');
-          expect(callStack[0].mod.property).toBe('job');
-          expect(callStack[0].mod.from).toBe('monster');
-          expect(callStack[0].mod.to).toBe('level boss');
-          expect(callStack[0].mod.object).toBe(newElement);
-
-        });
-
-
-      });
-
-
-      describe("should not deactivate any handler", function() {
-
-        it("if the provided handler is not an handler", function() {
-
-
-          fw.watchArray(array, 'job', handlerGen('jobHandler'));
-          fw.watchArray(array, 'job', handlerGen('jobHandler2'));
-
-          fw.unwatchArray(array, 'job', function(){});
-
-          array[0].job = 'monster';
-
-          expect(callStack.length).toBe(2);
-          expect(callStack[0].handlerId).toBe('jobHandler');
-          expect(callStack[0].mod.property).toBe('job');
-          expect(callStack[0].mod.from).toBe('plumber');
-          expect(callStack[0].mod.to).toBe('monster');
-          expect(callStack[0].mod.object).toBe(array[0]);
-          expect(callStack[1].handlerId).toBe('jobHandler2');
-          expect(callStack[1].mod.property).toBe('job');
-          expect(callStack[1].mod.from).toBe('plumber');
-          expect(callStack[1].mod.to).toBe('monster');
-          expect(callStack[1].mod.object).toBe(array[0]);
-
-        });
-
-        it("if the provided handler is an element handler but not an array handler", function() {
-
-
-          fw.watchArray(array, 'job', handlerGen('arrayHandler'));
-          fw.watch(array[0], 'job', handlerGen('elementHandler'));
-
-          fw.unwatchArray(array, 'job', handlers.elementHandler);
-
-          array[0].job = 'monster';
-
-          expect(callStack.length).toBe(2);
-          expect(callStack[0].handlerId).toBe('arrayHandler');
-          expect(callStack[0].mod.property).toBe('job');
-          expect(callStack[0].mod.from).toBe('plumber');
-          expect(callStack[0].mod.to).toBe('monster');
-          expect(callStack[0].mod.object).toBe(array[0]);
-          expect(callStack[1].handlerId).toBe('elementHandler');
-          expect(callStack[1].mod.property).toBe('job');
-          expect(callStack[1].mod.from).toBe('plumber');
-          expect(callStack[1].mod.to).toBe('monster');
-          expect(callStack[1].mod.object).toBe(array[0]);
-
-        });
-      });
-
-
-
-    });
 
 
 

@@ -62,7 +62,7 @@
 
 
   /*
-    THE PROP PARAMETER
+    THE PROP PARAMETER (TODO)
     pippo - watch property pippo
     pippo.child - watch property child on pippo as parent
     array[].property - watch property on every element of the array
@@ -205,13 +205,11 @@
     WA_METHOD_HANDLER = '$$arrayMethodHandler',
     newElementsHandler = function (self) {
       return function (mod) {
-
         // for each unshift() / push() argument
         for (var i = 0, ii = mod.args.length; i < ii; ++i) {
           if (mod.args[i]) {
             // for each watched property
             for (var prop in self[WA_HANDLERS]) {
-             // console.log('hhhh', prop, mod.args, self[WA_HANDLERS][prop]);
               if (self[WA_HANDLERS].hasOwnProperty(prop)) {
                 // for each handler
                 for (var j = 0, jj = self[WA_HANDLERS][prop].length; j < jj; ++j) {
@@ -290,11 +288,16 @@
 
     } else if (!func) {
       // unwatch only this property
-      delete obj[WA_HANDLERS][prop]; // remove all array handlers for this property
       unwatchProp(obj, prop);
+      delete obj[WA_HANDLERS][prop]; // remove all array handlers for this property
     } else {
       // unwatch only this handler
-      obj[WA_HANDLERS][prop].splice(obj[WA_HANDLERS][prop].indexOf(func, 1)); // remove the single array handler
+      var ar = obj[WA_HANDLERS][prop],
+        indexOfFunc = ar.indexOf(func);
+      if (indexOfFunc === -1) { // handler not found
+        return;
+      }
+      ar.splice(indexOfFunc, 1); // remove the single array handler
       unwatchElems(obj, prop, func);
 
       // delete array handlers array for this property if it's empty

@@ -11,6 +11,9 @@
     WP_BACKUP = '$$propBackup', // the name of the property used to store the watched properties data
     WP_HANDLERS = '$$propWatch';  // the name of the property used to store the watch handlers
 
+  fw.WP_BACKUP = WP_BACKUP;
+  fw.WP_HANDLERS = WP_HANDLERS;
+
   root[moduleName] = fw;
 
 
@@ -71,8 +74,13 @@
   */
   fw.watch = function watch(obj, prop, func) {
     if (!obj) {
-      console.warn('Calling "watch" on a falsy object');
-      return;
+      throw ('watch: obj should be a valid object');
+    }
+    if (!(typeof prop === 'string')) {
+      throw ('watch: prop should be a string');
+    }
+    if (!(typeof func === 'function')) {
+      throw ('watch: func should be a function');
     }
     watchProp(obj, prop, func);
   };
@@ -124,6 +132,9 @@
 
   var WM_BACKUP = '$$methods',
       WM_HANDLERS = '$$methodHandlers';
+
+  fw.WM_BACKUP = WM_BACKUP;
+  fw.WM_HANDLERS = WM_HANDLERS;
 
   // WATCH METHODS
   fw.watchMethod = function (obj, method, func) {
@@ -222,12 +233,21 @@
       };
     };
 
+  fw.WA_HANDLERS = WA_HANDLERS;
+  fw.WA_METHOD_HANDLER = WA_METHOD_HANDLER;
+
 
 
   fw.watchArray = function (obj, prop, func) {
 
     if (!(obj && obj.constructor === Array)) {
       throw 'watchArray: obj must be an Array';
+    }
+    if (!(typeof prop === 'string')) {
+      throw 'watchArray: prop must be a string';
+    }
+    if (!(typeof func === 'function')) {
+      throw 'watchArray: func must be a function';
     }
 
     // prepare the array to watch element properties
@@ -280,7 +300,7 @@
       // for each ARRAY watched property
       for (var k in obj[WA_HANDLERS]) {
         if (obj[WA_HANDLERS].hasOwnProperty(k)) {
-          unwatchProp(obj, prop);
+          unwatchProp(obj, k);
         }
       }
 

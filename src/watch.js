@@ -139,6 +139,21 @@
   // WATCH METHODS
   fw.watchMethod = function (obj, method, func) {
 
+    if (!obj || typeof obj !== 'object') {
+      throw ('watch: obj should be a valid object');
+    }
+    if (!(typeof method === 'string')) {
+      throw ('watch: method should be a string');
+    }
+    if (!(typeof func === 'function')) {
+      throw ('watch: func should be a function');
+    }
+
+    // TODO support method redefinition
+    if (!(typeof obj[method] === 'function')) {
+      throw ('watch: the watched method should be a function');
+    }
+
     // prepare the object to watch methods
     if (!obj[WM_HANDLERS]) {
       Object.defineProperty(obj, WM_BACKUP, { configurable: true, enumerable: false, writable: true, value: {} });
@@ -149,6 +164,7 @@
     if (!obj[WM_HANDLERS][method]) {
       obj[WM_HANDLERS][method] = [];
       obj[WM_BACKUP][method] = obj[method];
+      var methodEnumerable = obj.propertyIsEnumerable(method);
       obj[method] = function () {
         var mod = {
           method: method,
@@ -160,7 +176,7 @@
         }
         this[WM_BACKUP][method].apply(this, arguments);
       };
-      Object.defineProperty(obj, method, { configurable: true, enumerable: false });
+      Object.defineProperty(obj, method, { configurable: true, enumerable: methodEnumerable });
     }
 
     // add the binding

@@ -45,7 +45,6 @@ describe("[watch - array]", function() {
     it("should throw an error if the first parameter is undefined", function() {
       var error = undefined;
       try {
-        var notAnArray = {};
         fw.watchArray(undefined, 'name', function () {});
       } catch (e) {
         error = e;
@@ -56,7 +55,6 @@ describe("[watch - array]", function() {
     it("should throw an error if the second parameter is not a string", function() {
       var error = undefined;
       try {
-        var notAnArray = {};
         fw.watchArray(array, 48, function () {});
       } catch (e) {
         error = e;
@@ -67,7 +65,6 @@ describe("[watch - array]", function() {
     it("should throw an error if the second parameter is undefined", function() {
       var error = undefined;
       try {
-        var notAnArray = {};
         fw.watchArray(array, undefined, function () {});
       } catch (e) {
         error = e;
@@ -78,7 +75,6 @@ describe("[watch - array]", function() {
     it("should throw an error if the third parameter is not a function", function() {
       var error = undefined;
       try {
-        var notAnArray = {};
         fw.watchArray(array, 'name', 46);
       } catch (e) {
         error = e;

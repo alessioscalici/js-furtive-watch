@@ -28,72 +28,93 @@ describe("[watch - method]", function() {
   // =========================================== ERRORS =========================================== //
   describe("[watchMethod() errors]", function() {
 
-    beforeEach(function () {
-      object = {
-        testMethod : function () {}
-      };
+    var executeErrorsTest = function () {
+
+      it("should throw an error if the first parameter is not an object", function() {
+        var error = undefined;
+        try {
+          fw.watchMethod(100, 'testMethod', function () {});
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeDefined();
+      });
+
+      it("should throw an error if the first parameter is undefined", function() {
+        var error = undefined;
+        try {
+          fw.watchMethod(undefined, 'testMethod', function () {});
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeDefined();
+      });
+
+      // TODO support method redefinition
+      it("should throw an error if the property is not defined as a method", function() {
+        var error = undefined;
+        try {
+          fw.watchMethod(object, 'undefinedMethod', function () {});
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeDefined();
+      });
+
+      it("should throw an error if the second parameter is not a string", function() {
+        var error = undefined;
+        try {
+          fw.watchMethod(object, 100, function () {});
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeDefined();
+      });
+
+
+      it("should throw an error if the second parameter is undefined", function() {
+        var error = undefined;
+        try {
+          fw.watchMethod(object, undefined, function () {});
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeDefined();
+      });
+
+      it("should throw an error if the third parameter is not a function", function() {
+        var error = undefined;
+        try {
+          fw.watchMethod(object, 'testMethod', 46);
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeDefined();
+      });
+    };
+
+
+
+    describe("on an Object method defined in a property", function() {
+      beforeEach(function() {
+        object = {
+          testMethod: function () {},
+          unwatchedMethod: function () {},
+        };
+      });
+      executeErrorsTest();
     });
 
-    it("should throw an error if the first parameter is not an object", function() {
-      var error = undefined;
-      try {
-        fw.watchMethod(100, 'testMethod', function () {});
-      } catch (e) {
-        error = e;
-      }
-      expect(error).toBeDefined();
-    });
+    describe("on an Object method defined in prototype", function() {
+      beforeEach(function() {
+        var ObjectClass = function () {};
 
-    it("should throw an error if the first parameter is undefined", function() {
-      var error = undefined;
-      try {
-        fw.watchMethod(undefined, 'testMethod', function () {});
-      } catch (e) {
-        error = e;
-      }
-      expect(error).toBeDefined();
-    });
+        ObjectClass.prototype.testMethod = function () {};
+        ObjectClass.prototype.unwatchedMethod = function () {};
 
-    // TODO support method redefinition
-    it("should throw an error if the property is not defined as a method", function() {
-      var error = undefined;
-      try {
-        fw.watchMethod(object, 'undefinedMethod', function () {});
-      } catch (e) {
-        error = e;
-      }
-      expect(error).toBeDefined();
-    });
-
-    it("should throw an error if the second parameter is not a string", function() {
-      var error = undefined;
-      try {
-        fw.watchMethod(object, 100, function () {});
-      } catch (e) {
-        error = e;
-      }
-      expect(error).toBeDefined();
-    });
-
-
-    it("should throw an error if the second parameter is undefined", function() {
-      var error = undefined;
-      try {
-        fw.watchMethod(object, undefined, function () {});
-      } catch (e) {
-        error = e;
-      }
-      expect(error).toBeDefined();
-    });
-
-    it("should throw an error if the third parameter is not a function", function() {
-      var error = undefined;
-      try {
-        fw.watchMethod(object, 'testMethod', 46);
-      } catch (e) {
-        error = e;
-      }
-      expect(error).toBeDefined();
+        object = new ObjectClass();
+      });
+      executeErrorsTest();
     });
 
   });
@@ -101,12 +122,6 @@ describe("[watch - method]", function() {
 
   // =========================================== OBJECT STATUS =========================================== //
   describe("[object status]", function() {
-
-    beforeEach(function () {
-      object = {
-        testMethod : function () {}
-      };
-    });
 
     var arraysEqual = function arraysEqual(a, b) {
       if (a === b) return true;
@@ -124,54 +139,80 @@ describe("[watch - method]", function() {
       return true;
     }
 
-
-    it("Object.keys() should remain the same after setting a watch", function() {
-      var keysBefore = Object.keys(object);
-      fw.watchMethod(object, 'testMethod', function () {});
-      var keysAfter = Object.keys(object);
-
-      expect(arraysEqual(keysBefore, keysAfter)).toBe(true);
-    });
+    var executeObjectStatusTest = function () {
 
 
-    it("object should have the non enumerable internal properties", function() {
+      it("Object.keys() should remain the same after setting a watch", function() {
+        var keysBefore = Object.keys(object);
+        fw.watchMethod(object, 'testMethod', function () {});
+        var keysAfter = Object.keys(object);
 
-      expect(object[fw.WM_BACKUP]).toBeUndefined();
-      expect(object[fw.WM_HANDLERS]).toBeUndefined();
-
-      fw.watchMethod(object, 'testMethod', function () {});
-
-      expect(object[fw.WM_BACKUP]).toBeDefined();
-      expect(object[fw.WM_HANDLERS]).toBeDefined();
-    });
-
-    describe("unwatchMethod ", function() {
-
-      it("should remove internal properties if removing the last handler", function() {
-
-        expect(object[fw.WM_BACKUP]).toBeUndefined();
-        expect(object[fw.WM_HANDLERS]).toBeUndefined();
-
-        var handler = function () {};
-        var handler2 = function () {};
-
-        fw.watchMethod(object, 'testMethod', handler);
-        fw.watchMethod(object, 'testMethod', handler2);
-
-        expect(object[fw.WM_BACKUP]).toBeDefined();
-        expect(object[fw.WM_HANDLERS]).toBeDefined();
-
-        fw.unwatchMethod(object, 'testMethod', handler);
-
-        expect(object[fw.WM_BACKUP]).toBeDefined();
-        expect(object[fw.WM_HANDLERS]).toBeDefined();
-
-        fw.unwatchMethod(object, 'testMethod', handler2);
-
-        expect(object[fw.WM_BACKUP]).toBeUndefined();
-        expect(object[fw.WM_HANDLERS]).toBeUndefined();
+        expect(arraysEqual(keysBefore, keysAfter)).toBe(true);
       });
 
+
+      it("object should have the non enumerable internal properties", function() {
+
+        expect(object[fw.WM_BACKUP]).toBeUndefined();
+        expect(object[fw.WM_HANDLERS]).toBeUndefined();
+
+        fw.watchMethod(object, 'testMethod', function () {});
+
+        expect(object[fw.WM_BACKUP]).toBeDefined();
+        expect(object[fw.WM_HANDLERS]).toBeDefined();
+      });
+
+      describe("unwatchMethod ", function() {
+
+        it("should remove internal properties if removing the last handler", function() {
+
+          expect(object[fw.WM_BACKUP]).toBeUndefined();
+          expect(object[fw.WM_HANDLERS]).toBeUndefined();
+
+          var handler = function () {};
+          var handler2 = function () {};
+
+          fw.watchMethod(object, 'testMethod', handler);
+          fw.watchMethod(object, 'testMethod', handler2);
+
+          expect(object[fw.WM_BACKUP]).toBeDefined();
+          expect(object[fw.WM_HANDLERS]).toBeDefined();
+
+          fw.unwatchMethod(object, 'testMethod', handler);
+
+          expect(object[fw.WM_BACKUP]).toBeDefined();
+          expect(object[fw.WM_HANDLERS]).toBeDefined();
+
+          fw.unwatchMethod(object, 'testMethod', handler2);
+
+          expect(object[fw.WM_BACKUP]).toBeUndefined();
+          expect(object[fw.WM_HANDLERS]).toBeUndefined();
+        });
+
+      });
+    };
+
+
+    describe("on an Object method defined in a property", function() {
+      beforeEach(function() {
+        object = {
+          testMethod: function () {},
+          unwatchedMethod: function () {},
+        };
+      });
+      executeObjectStatusTest();
+    });
+
+    describe("on an Object method defined in prototype", function() {
+      beforeEach(function() {
+        var ObjectClass = function () {};
+
+        ObjectClass.prototype.testMethod = function () {};
+        ObjectClass.prototype.unwatchedMethod = function () {};
+
+        object = new ObjectClass();
+      });
+      executeObjectStatusTest();
     });
 
   });
@@ -260,20 +301,28 @@ describe("[watch - method]", function() {
 
 
       describe("on an Object method defined in a property", function() {
-
         beforeEach(function() {
-
           object = {
             testMethod: function () {},
             unwatchedMethod: function () {},
           };
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler'));
+        });
+        testCallingHandlers();
+      });
+
+      describe("on an Object method defined in prototype", function() {
+        beforeEach(function() {
+          var ObjectClass = function () {};
+
+          ObjectClass.prototype.testMethod = function () {};
+          ObjectClass.prototype.unwatchedMethod = function () {};
+
+          object = new ObjectClass();
 
           fw.watchMethod(object, 'testMethod', handlerGen('methodHandler'));
-
         });
-
         testCallingHandlers();
-
       });
 
 
@@ -285,343 +334,225 @@ describe("[watch - method]", function() {
 
 
     // =========================================== UNWATCH SPECIFIC METHOD HANDLER =========================================== //
-    // xdescribe("[unwatch handler]", function() {
+    describe("[unwatch handler]", function() {
 
 
-    //   var testUnwatchHandler = function () {
+      var testUnwatchHandler = function () {
 
 
-    //     it("should deactivate only the specified handler", function() {
+        it("should deactivate only the specified handler", function() {
 
-    //       var prevVal = element.job;
-    //       element.job = 'monster';
+          fw.unwatchMethod(object, 'testMethod', handlers.methodHandler2);
 
-    //       expect(callStack.length).toBe(1);
-    //       expect(callStack[0].handlerId).toBe('jobHandler2');
-    //       expect(callStack[0].mod.property).toBe('job');
-    //       expect(callStack[0].mod.from).toBe(prevVal);
-    //       expect(callStack[0].mod.to).toBe('monster');
-    //       expect(callStack[0].mod.object).toBe(element);
+          var arg0 = 123, arg1 = true;
+          object.testMethod(arg0, arg1);
 
-    //     });
+          expect(callStack.length).toBe(1);
+          expect(callStack[0].handlerId).toBe('methodHandler');
+          expect(callStack[0].mod.method).toBe('testMethod');
+          expect(callStack[0].mod.args[0]).toBe(arg0);
+          expect(callStack[0].mod.args[1]).toBe(arg1);
+          expect(callStack[0].mod.object).toBe(object);
 
-    //   };
+        });
 
+      };
 
-    //   beforeEach(function() {
-    //     callStack = [];
-    //     array = [
-    //       { name: 'Mario', job: 'plumber' },
-    //       { name: 'Luigi', job: 'plumber' }
-    //     ];
 
-    //     fw.watchArray(array, 'job', handlerGen('jobHandler'));
-    //     fw.watchArray(array, 'job', handlerGen('jobHandler2'));
+      describe("on an Object method defined in a property", function() {
+        beforeEach(function() {
+          object = {
+            testMethod: function () {},
+            unwatchedMethod: function () {},
+          };
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler'));
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler2'));
+        });
+        testUnwatchHandler();
+      });
 
-    //   });
+      describe("on an Object method defined in prototype", function() {
+        beforeEach(function() {
+          var ObjectClass = function () {};
 
+          ObjectClass.prototype.testMethod = function () {};
+          ObjectClass.prototype.unwatchedMethod = function () {};
 
-    //   describe("on an existing element", function() {
-    //     beforeEach(function() {
-    //       element = array[0];
-    //       fw.unwatchArray(array, 'job', handlers.jobHandler);
-    //     });
-    //     testUnwatchHandler();
-    //   });
+          object = new ObjectClass();
 
-    //   describe("on a new element added with push() BEFORE unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       array.push(element);
-    //       fw.unwatchArray(array, 'job', handlers.jobHandler);
-    //     });
-    //     testUnwatchHandler();
-    //   });
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler'));
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler2'));
+        });
+        testUnwatchHandler();
+      });
 
-    //   describe("on a new element added with push() AFTER unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       fw.unwatchArray(array, 'job', handlers.jobHandler);
-    //       array.push(element);
-    //     });
-    //     testUnwatchHandler();
-    //   });
 
-    //   describe("on a new element added with unshift() BEFORE unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       array.unshift(element);
-    //       fw.unwatchArray(array, 'job', handlers.jobHandler);
-    //     });
-    //     testUnwatchHandler();
-    //   });
+    }); // end unwatch handler
 
-    //   describe("on a new element added with unshift() AFTER unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       fw.unwatchArray(array, 'job', handlers.jobHandler);
-    //       array.unshift(element);
-    //     });
-    //     testUnwatchHandler();
-    //   });
 
 
 
+    // // =========================================== UNWATCH METHOD =========================================== //
+    describe("[unwatch method]", function() {
 
-    //   describe("should not deactivate any handler", function() {
 
-    //     beforeEach(function() {
-    //       element = array[0];
-    //     });
+      var testUnwatchMethod = function () {
 
-    //     it("if the provided handler is not an handler", function() {
 
+        it("should deactivate all the handlers for the specified method", function() {
 
-    //       fw.unwatchArray(array, 'job', function(){});
+          object.testMethod();
+          expect(callStack.length).toBe(2);
 
-    //       var prevVal = element.job;
-    //       element.job = 'monster';
+          fw.unwatchMethod(object, 'testMethod');
 
-    //       expect(callStack.length).toBe(2);
-    //       expect(callStack[0].handlerId).toBe('jobHandler');
-    //       expect(callStack[0].mod.property).toBe('job');
-    //       expect(callStack[0].mod.from).toBe(prevVal);
-    //       expect(callStack[0].mod.to).toBe('monster');
-    //       expect(callStack[0].mod.object).toBe(element);
-    //       expect(callStack[1].handlerId).toBe('jobHandler2');
-    //       expect(callStack[1].mod.property).toBe('job');
-    //       expect(callStack[1].mod.from).toBe(prevVal);
-    //       expect(callStack[1].mod.to).toBe('monster');
-    //       expect(callStack[1].mod.object).toBe(element);
+          callStack = [];
+          object.testMethod();
+          expect(callStack.length).toBe(0);
+        });
 
-    //     });
 
-    //     it("if the provided handler is an element handler but not an array handler", function() {
+        it("should deactivate only the handlers for the specified property", function() {
 
+          object.testMethod();
+          object.otherMethod();
+          expect(callStack.length).toBe(3);
 
-    //       fw.watch(element, 'job', handlerGen('elementHandler'));
-    //       fw.unwatchArray(array, 'job', handlers.elementHandler);
+          fw.unwatchMethod(object, 'testMethod');
 
-    //       var prevVal = element.job;
-    //       element.job = 'monster';
+          callStack = [];
 
-    //       expect(callStack.length).toBe(3);
-    //       expect(callStack[0].handlerId).toBe('jobHandler');
-    //       expect(callStack[0].mod.property).toBe('job');
-    //       expect(callStack[0].mod.from).toBe(prevVal);
-    //       expect(callStack[0].mod.to).toBe('monster');
-    //       expect(callStack[0].mod.object).toBe(element);
-    //       expect(callStack[1].handlerId).toBe('jobHandler2');
-    //       expect(callStack[1].mod.property).toBe('job');
-    //       expect(callStack[1].mod.from).toBe(prevVal);
-    //       expect(callStack[1].mod.to).toBe('monster');
-    //       expect(callStack[1].mod.object).toBe(element);
-    //       expect(callStack[2].handlerId).toBe('elementHandler');
-    //       expect(callStack[2].mod.property).toBe('job');
-    //       expect(callStack[2].mod.from).toBe(prevVal);
-    //       expect(callStack[2].mod.to).toBe('monster');
-    //       expect(callStack[2].mod.object).toBe(element);
+          object.testMethod();
+          object.otherMethod();
 
-    //     });
-    //   });
+          expect(callStack.length).toBe(1);
+          expect(callStack[0].handlerId).toBe('otherMethodHandler');
+          expect(callStack[0].mod.method).toBe('otherMethod');
+          expect(callStack[0].mod.args.length).toBe(0);
+          expect(callStack[0].mod.object).toBe(object);
+        });
 
+      };
 
 
+      describe("on an Object method defined in a property", function() {
+        beforeEach(function() {
+          object = {
+            testMethod: function () {},
+            otherMethod: function () {},
+            unwatchedMethod: function () {},
+          };
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler'));
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler2'));
+          fw.watchMethod(object, 'otherMethod', handlerGen('otherMethodHandler'));
+        });
+        testUnwatchMethod();
+      });
 
-    // }); // end unwatch handler
+      describe("on an Object method defined in prototype", function() {
+        beforeEach(function() {
+          var ObjectClass = function () {};
 
+          ObjectClass.prototype.testMethod = function () {};
+          ObjectClass.prototype.otherMethod = function () {};
+          ObjectClass.prototype.unwatchedMethod = function () {};
 
+          object = new ObjectClass();
 
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler'));
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler2'));
+          fw.watchMethod(object, 'otherMethod', handlerGen('otherMethodHandler'));
+        });
+        testUnwatchMethod();
+      });
 
-    // // =========================================== UNWATCH PROPERTY =========================================== //
-    // xdescribe("[unwatch property]", function() {
 
 
-    //   var testUnwatchProperty = function () {
+    }); // end unwatch method
 
 
-    //     it("should deactivate all the handlers for the specified property", function() {
-    //       var prevVal = element.job;
-    //       element.job = 'monster';
-    //       expect(callStack.length).toBe(0);
-    //     });
 
+    // // =========================================== UNWATCH OBJECT =========================================== //
+    describe("[unwatch object]", function() {
 
-    //     it("should deactivate only the handlers for the specified property", function() {
-    //       var prevVal = element.name;
-    //       element.job = 'monster';
-    //       element.name = 'Bower';
 
-    //       expect(callStack.length).toBe(1);
-    //       expect(callStack[0].handlerId).toBe('nameHandler');
-    //       expect(callStack[0].mod.property).toBe('name');
-    //       expect(callStack[0].mod.from).toBe(prevVal);
-    //       expect(callStack[0].mod.to).toBe('Bower');
-    //       expect(callStack[0].mod.object).toBe(element);
-    //     });
+      var testUnwatchObject = function () {
 
-    //   };
 
+        it("should deactivate all the method handlers for the specified object", function() {
 
-    //   beforeEach(function() {
-    //     callStack = [];
-    //     array = [
-    //       { name: 'Mario', job: 'plumber' },
-    //       { name: 'Luigi', job: 'plumber' }
-    //     ];
+          object.testMethod();
+          object.otherMethod();
 
-    //     fw.watchArray(array, 'job', handlerGen('jobHandler'));
-    //     fw.watchArray(array, 'job', handlerGen('jobHandler2'));
-    //     fw.watchArray(array, 'name', handlerGen('nameHandler'));
+          expect(callStack.length).toBe(3);
 
-    //   });
+          fw.unwatchMethod(object);
 
+          callStack = [];
+          object.testMethod();
+          object.otherMethod();
 
-    //   describe("on an existing element", function() {
-    //     beforeEach(function() {
-    //       element = array[0];
-    //       fw.unwatchArray(array, 'job');
-    //     });
-    //     testUnwatchProperty();
-    //   });
+          expect(callStack.length).toBe(0);
+        });
 
-    //   describe("on a new element added with push() BEFORE unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       array.push(element);
-    //       fw.unwatchArray(array, 'job');
-    //     });
-    //     testUnwatchProperty();
-    //   });
 
-    //   describe("on a new element added with push() AFTER unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       fw.unwatchArray(array, 'job');
-    //       array.push(element);
-    //     });
-    //     testUnwatchProperty();
-    //   });
+        it("should deactivate only the method handlers, not property handlers", function() {
 
-    //   describe("on a new element added with unshift() BEFORE unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       array.unshift(element);
-    //       fw.unwatchArray(array, 'job');
-    //     });
-    //     testUnwatchProperty();
-    //   });
+          fw.watch(object, 'name', handlerGen('elementHandler'));
+          fw.unwatchMethod(object);
 
-    //   describe("on a new element added with unshift() AFTER unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       fw.unwatchArray(array, 'job');
-    //       array.unshift(element);
-    //     });
-    //     testUnwatchProperty();
-    //   });
 
+          object.testMethod();
+          object.otherMethod();
 
+          var prevVal = object.name;
+          object.name = 'Bower';
 
-    // }); // end unwatch property
+          expect(callStack.length).toBe(1);
+          expect(callStack[0].handlerId).toBe('elementHandler');
+          expect(callStack[0].mod.property).toBe('name');
+          expect(callStack[0].mod.from).toBe(prevVal);
+          expect(callStack[0].mod.to).toBe('Bower');
+          expect(callStack[0].mod.object).toBe(object);
+        });
 
+      };
 
 
-    // // =========================================== UNWATCH ARRAY =========================================== //
-    // xdescribe("[unwatch array]", function() {
 
+      describe("on an Object method defined in a property", function() {
+        beforeEach(function() {
+          object = {
+            testMethod: function () {},
+            otherMethod: function () {},
+            unwatchedMethod: function () {},
+          };
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler'));
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler2'));
+          fw.watchMethod(object, 'otherMethod', handlerGen('otherMethodHandler'));
+        });
+        testUnwatchObject();
+      });
 
-    //   var testUnwatchArray = function () {
+      describe("on an Object method defined in prototype", function() {
+        beforeEach(function() {
+          var ObjectClass = function () {};
 
+          ObjectClass.prototype.testMethod = function () {};
+          ObjectClass.prototype.otherMethod = function () {};
+          ObjectClass.prototype.unwatchedMethod = function () {};
 
-    //     it("should deactivate all the handlers for the specified array", function() {
-    //       element.job = 'monster';
-    //       element.name = 'Bower';
-    //       expect(callStack.length).toBe(0);
-    //     });
+          object = new ObjectClass();
 
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler'));
+          fw.watchMethod(object, 'testMethod', handlerGen('methodHandler2'));
+          fw.watchMethod(object, 'otherMethod', handlerGen('otherMethodHandler'));
+        });
+        testUnwatchObject();
+      });
 
-    //     it("should deactivate only the array handlers, not individual member handlers", function() {
 
-    //       fw.watch(element, 'name', handlerGen('elementHandler'));
-    //       fw.unwatchArray(array);
-
-    //       var prevVal = element.name;
-    //       element.job = 'monster';
-    //       element.name = 'Bower';
-
-    //       expect(callStack.length).toBe(1);
-    //       expect(callStack[0].handlerId).toBe('elementHandler');
-    //       expect(callStack[0].mod.property).toBe('name');
-    //       expect(callStack[0].mod.from).toBe(prevVal);
-    //       expect(callStack[0].mod.to).toBe('Bower');
-    //       expect(callStack[0].mod.object).toBe(element);
-    //     });
-
-    //   };
-
-
-    //   beforeEach(function() {
-    //     callStack = [];
-    //     array = [
-    //       { name: 'Mario', job: 'plumber' },
-    //       { name: 'Luigi', job: 'plumber' }
-    //     ];
-
-    //     fw.watchArray(array, 'job', handlerGen('jobHandler'));
-    //     fw.watchArray(array, 'job', handlerGen('jobHandler2'));
-    //     fw.watchArray(array, 'name', handlerGen('nameHandler'));
-
-    //   });
-
-
-    //   describe("on an existing element", function() {
-    //     beforeEach(function() {
-    //       element = array[0];
-    //       fw.unwatchArray(array);
-    //     });
-    //     testUnwatchArray();
-    //   });
-
-    //   describe("on a new element added with push() BEFORE unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       array.push(element);
-    //       fw.unwatchArray(array);
-    //     });
-    //     testUnwatchArray();
-    //   });
-
-    //   describe("on a new element added with push() AFTER unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       fw.unwatchArray(array);
-    //       array.push(element);
-    //     });
-    //     testUnwatchArray();
-    //   });
-
-    //   describe("on a new element added with unshift() BEFORE unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       array.unshift(element);
-    //       fw.unwatchArray(array);
-    //     });
-    //     testUnwatchArray();
-    //   });
-
-    //   describe("on a new element added with unshift() AFTER unwatching", function() {
-    //     beforeEach(function() {
-    //       element = { name: 'Bower', job: 'monster' };
-    //       fw.unwatchArray(array);
-    //       array.unshift(element);
-    //     });
-    //     testUnwatchArray();
-    //   });
-
-
-
-    // }); // end unwatch array
+    }); // end unwatch object
 
   }); // end calling handlers
 
